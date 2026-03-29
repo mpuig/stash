@@ -91,7 +91,7 @@ STASH_DIR=~/work stash ls
 One-time setup — point the collection at your stash directory:
 
 ```bash
-qmd collection add ~/projects/knowledge --name stash --mask "*.md"
+qmd collection add /path/to/your/stash --name stash --mask "*.md"
 ```
 
 Replace the path with whatever `stash config` shows as your stash dir.

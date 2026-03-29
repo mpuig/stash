@@ -38,6 +38,8 @@ Examples:
   stash config set dir ~/Documents/stash
 `);
 
+program.helpCommand("help [command]", "display help for command");
+
 program
   .command("ls")
   .alias("list")
@@ -64,6 +66,8 @@ program
 const configCmd = program
   .command("config")
   .description("Show or manage configuration");
+
+configCmd.helpCommand("help [command]", "display help for command");
 
 configCmd
   .command("show", { isDefault: true })
