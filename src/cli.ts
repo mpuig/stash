@@ -14,24 +14,27 @@ program
   .description("Save interesting content from the web as searchable markdown")
   .version("0.1.0")
   .option("-d, --dir <path>", "stash directory", config.dir)
+  .argument("[url]", "URL to save")
+  .option("-t, --tags <tags>", "comma-separated tags (used with URL)")
+  .action(async (url, opts) => {
+    if (url) {
+      const dir = program.opts().dir;
+      await stashUrl(url, { ...opts, dir, config });
+    } else {
+      program.help();
+    }
+  })
   .addHelpText("after", `
+--dir works on every command.
+
 Examples:
   stash https://example.com/article
   stash https://example.com/article -t "ai,tools"
   stash ls
   stash search "agents" --open
+  stash --dir ~/other search "foo"
   stash config set dir ~/Documents/stash
-
 `);
-
-program
-  .command("save", { isDefault: true, hidden: true })
-  .argument("<url>", "URL to stash")
-  .option("-t, --tags <tags>", "comma-separated tags")
-  .action(async (url, opts) => {
-    const dir = program.opts().dir;
-    await stashUrl(url, { ...opts, dir, config });
-  });
 
 program
   .command("ls")

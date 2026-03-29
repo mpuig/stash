@@ -1,4 +1,5 @@
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { loadConfig, getConfigPath, getConfigDir } from "../config.js";
 
 export function showConfig(): void {
@@ -59,6 +60,10 @@ export function setConfig(key: string, value: string): void {
   // parse arrays for tags
   if (key === "tags") {
     target[finalKey] = value.split(",").map((t) => t.trim());
+  } else if (key === "dir") {
+    // Collapse absolute home path back to ~ for portability
+    const home = homedir();
+    target[finalKey] = value.startsWith(home + "/") ? "~" + value.slice(home.length) : value;
   } else {
     target[finalKey] = value;
   }
