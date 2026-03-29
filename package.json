@@ -1,0 +1,42 @@
+{
+  "name": "@mpuig/stash",
+  "version": "0.1.0",
+  "description": "Save interesting content from the web as searchable markdown files",
+  "type": "module",
+  "bin": {
+    "stash": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/build-cli.mjs",
+    "dev": "tsx src/cli.ts",
+    "prepare": "npm run build"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "bookmark",
+    "save",
+    "content",
+    "markdown",
+    "cli",
+    "read-later"
+  ],
+  "author": "Marc Puig",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "gray-matter": "^4.0.3",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
