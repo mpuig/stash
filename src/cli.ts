@@ -93,15 +93,13 @@ function resolveDir(opts: { dir?: string }): string {
   return opts.dir || config.dir;
 }
 
-program
-  .argument("[url]", "URL to stash")
+const saveCmd = program
+  .command("save", { isDefault: true })
+  .argument("<url>", "URL to stash")
   .option("-t, --tags <tags>", "comma-separated tags")
+  .option("-d, --dir <path>", `stash directory (default: ${config.dir})`)
   .action(async (url, opts) => {
-    if (url) {
-      await stashUrl(url, { ...opts, dir: config.dir, config });
-    } else {
-      program.help();
-    }
+    await stashUrl(url, { ...opts, dir: resolveDir(opts), config });
   });
 
 program

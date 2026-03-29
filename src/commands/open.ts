@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { platform } from "node:os";
 import matter from "gray-matter";
+import { assertDirExists } from "../util.js";
 
 interface OpenOptions {
   dir: string;
@@ -20,6 +21,7 @@ function openUrl(url: string): void {
 }
 
 export async function openStash(query: string, opts: OpenOptions): Promise<void> {
+  assertDirExists(opts.dir);
   const files = readdirSync(opts.dir).filter((f) => f.endsWith(".md"));
   const terms = query.toLowerCase().split(/\s+/);
 

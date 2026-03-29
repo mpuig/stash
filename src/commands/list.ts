@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
+import { assertDirExists } from "../util.js";
 
 interface ListOptions {
   limit: string;
@@ -9,6 +10,14 @@ interface ListOptions {
 }
 
 export async function listStashes(opts: ListOptions): Promise<void> {
+  assertDirExists(opts.dir);
+
+  const limit = parseInt(opts.limit, 10);
+  if (isNaN(limit) || limit < 1) {
+    console.error(`Error: --limit must be a positive number, got "${opts.limit}"`);
+    process.exit(1);
+  }
+
   const files = readdirSync(opts.dir)
     .filter((f) => f.endsWith(".md"))
     .sort()
@@ -19,7 +28,6 @@ export async function listStashes(opts: ListOptions): Promise<void> {
     return;
   }
 
-  const limit = parseInt(opts.limit, 10);
   let shown = 0;
   let matched = 0;
 

@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import matter from "gray-matter";
-import { loadConfig } from "../config.js";
+import { assertDirExists } from "../util.js";
 
 interface SearchOptions {
   dir: string;
@@ -17,26 +17,28 @@ function hasQmd(): boolean {
   }
 }
 
-function qmdCollectionExists(name: string): boolean {
+/**
+ * Verify the "stash" qmd collection actually indexes the given directory
+ * by checking that a sample of its indexed files exist there.
+ */
+function qmdCollectionMatchesDir(dir: string): boolean {
   try {
-    const output = execFileSync("qmd", ["collection", "list"], {
+    const output = execFileSync("qmd", ["ls", "stash"], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    return output.includes(`${name} (`);
+    // Lines look like: "10.4 KB  Mar 29 18:04  qmd://stash/filename.md"
+    const match = output.match(/qmd:\/\/stash\/(\S+\.md)/);
+    if (!match) return false;
+    return existsSync(join(dir, match[1]));
   } catch {
     return false;
   }
 }
 
-function isDefaultDir(dir: string): boolean {
-  const config = loadConfig();
-  return resolve(dir) === resolve(config.dir);
-}
-
-function searchWithQmd(query: string, collection: string): void {
+function searchWithQmd(query: string): void {
   try {
-    const output = execFileSync("qmd", ["search", query, "-n", "10", "-c", collection], {
+    const output = execFileSync("qmd", ["search", query, "-n", "10", "-c", "stash"], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -101,11 +103,10 @@ function searchWithGrep(query: string, dir: string): void {
 }
 
 export async function searchStashes(query: string, opts: SearchOptions): Promise<void> {
-  // Only use qmd when searching the default configured directory
-  // and the "stash" collection exists. For --dir overrides, always
-  // use grep to search the actual requested directory.
-  if (isDefaultDir(opts.dir) && hasQmd() && qmdCollectionExists("stash")) {
-    searchWithQmd(query, "stash");
+  assertDirExists(opts.dir);
+
+  if (hasQmd() && qmdCollectionMatchesDir(opts.dir)) {
+    searchWithQmd(query);
   } else {
     searchWithGrep(query, opts.dir);
   }
