@@ -89,13 +89,16 @@ LLM USAGE GUIDE:
     - Malformed stash files are skipped gracefully in list/search/open.
 `);
 
+function resolveDir(opts: { dir?: string }): string {
+  return opts.dir || config.dir;
+}
+
 program
   .argument("[url]", "URL to stash")
   .option("-t, --tags <tags>", "comma-separated tags")
-  .option("-d, --dir <path>", "stash directory", config.dir)
   .action(async (url, opts) => {
     if (url) {
-      await stashUrl(url, { ...opts, config });
+      await stashUrl(url, { ...opts, dir: config.dir, config });
     } else {
       program.help();
     }
@@ -106,27 +109,27 @@ program
   .alias("ls")
   .description("List saved stashes")
   .option("-n, --limit <n>", "number of items to show", "20")
-  .option("-t, --tag <tag>", "filter by tag")
-  .option("-d, --dir <path>", "stash directory", config.dir)
+  .option("--tag <tag>", "filter by tag")
+  .option("-d, --dir <path>", `stash directory (default: ${config.dir})`)
   .action(async (opts) => {
-    await listStashes(opts);
+    await listStashes({ ...opts, dir: resolveDir(opts) });
   });
 
 program
   .command("search <query>")
   .alias("s")
   .description("Full-text search across stashes")
-  .option("-d, --dir <path>", "stash directory", config.dir)
+  .option("-d, --dir <path>", `stash directory (default: ${config.dir})`)
   .action(async (query, opts) => {
-    await searchStashes(query, opts);
+    await searchStashes(query, { ...opts, dir: resolveDir(opts) });
   });
 
 program
   .command("open <query>")
   .description("Open the original URL of a matching stash")
-  .option("-d, --dir <path>", "stash directory", config.dir)
+  .option("-d, --dir <path>", `stash directory (default: ${config.dir})`)
   .action(async (query, opts) => {
-    await openStash(query, opts);
+    await openStash(query, { ...opts, dir: resolveDir(opts) });
   });
 
 const configCmd = program

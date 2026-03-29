@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import matter from "gray-matter";
+import { loadConfig } from "../config.js";
 
 interface SearchOptions {
   dir: string;
@@ -16,25 +17,21 @@ function hasQmd(): boolean {
   }
 }
 
-function qmdCollectionForDir(dir: string): string | null {
+function qmdCollectionExists(name: string): boolean {
   try {
     const output = execFileSync("qmd", ["collection", "list"], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    // match collection whose path matches the configured dir
-    for (const line of output.split("\n")) {
-      const match = line.match(/^\s*(\S+)\s+(.+?)(\s|$)/);
-      if (match && match[2] && dir.startsWith(match[2].trim())) {
-        return match[1];
-      }
-    }
-    // fallback: check if "stash" collection exists
-    if (output.includes("stash")) return "stash";
-    return null;
+    return output.includes(`${name} (`);
   } catch {
-    return null;
+    return false;
   }
+}
+
+function isDefaultDir(dir: string): boolean {
+  const config = loadConfig();
+  return resolve(dir) === resolve(config.dir);
 }
 
 function searchWithQmd(query: string, collection: string): void {
@@ -104,9 +101,11 @@ function searchWithGrep(query: string, dir: string): void {
 }
 
 export async function searchStashes(query: string, opts: SearchOptions): Promise<void> {
-  const collection = hasQmd() ? qmdCollectionForDir(opts.dir) : null;
-  if (collection) {
-    searchWithQmd(query, collection);
+  // Only use qmd when searching the default configured directory
+  // and the "stash" collection exists. For --dir overrides, always
+  // use grep to search the actual requested directory.
+  if (isDefaultDir(opts.dir) && hasQmd() && qmdCollectionExists("stash")) {
+    searchWithQmd(query, "stash");
   } else {
     searchWithGrep(query, opts.dir);
   }

@@ -20,11 +20,10 @@ export async function listStashes(opts: ListOptions): Promise<void> {
   }
 
   const limit = parseInt(opts.limit, 10);
-  let count = 0;
+  let shown = 0;
+  let matched = 0;
 
   for (const file of files) {
-    if (count >= limit) break;
-
     let data: Record<string, unknown>;
     try {
       const raw = readFileSync(join(opts.dir, file), "utf-8");
@@ -37,13 +36,20 @@ export async function listStashes(opts: ListOptions): Promise<void> {
     const tags = Array.isArray(data.tags) ? data.tags : [];
     if (opts.tag && !tags.includes(opts.tag)) continue;
 
+    matched++;
+    if (shown >= limit) continue;
+
     const tagStr = tags.length ? ` [${tags.join(", ")}]` : "";
     const saved = data.saved instanceof Date ? data.saved.toISOString().slice(0, 10) : data.saved || "?";
     console.log(`  ${saved}  ${data.title || file}${tagStr}`);
     console.log(`           ${data.url || ""}`);
     console.log();
-    count++;
+    shown++;
   }
 
-  console.log(`${files.length} stashes total`);
+  if (opts.tag) {
+    console.log(`${matched} matching stash${matched === 1 ? "" : "es"} (${files.length} total)`);
+  } else {
+    console.log(`${matched} stash${matched === 1 ? "" : "es"}`);
+  }
 }

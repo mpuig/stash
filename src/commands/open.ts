@@ -1,10 +1,22 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+import { platform } from "node:os";
 import matter from "gray-matter";
 
 interface OpenOptions {
   dir: string;
+}
+
+function openUrl(url: string): void {
+  const os = platform();
+  if (os === "darwin") {
+    execFileSync("open", [url]);
+  } else if (os === "win32") {
+    execFileSync("cmd", ["/c", "start", "", url]);
+  } else {
+    execFileSync("xdg-open", [url]);
+  }
 }
 
 export async function openStash(query: string, opts: OpenOptions): Promise<void> {
@@ -42,5 +54,5 @@ export async function openStash(query: string, opts: OpenOptions): Promise<void>
 
   console.log(`Opening: ${best.title}`);
   console.log(`  ${best.url}`);
-  execFileSync("open", [best.url]);
+  openUrl(best.url);
 }
