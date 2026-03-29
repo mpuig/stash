@@ -88,13 +88,22 @@ STASH_DIR=~/work stash ls
 
 `stash search` works out of the box with built-in term matching. If you install [qmd](https://github.com/tobi/qmd), search uses BM25 ranking automatically.
 
-One-time setup:
+One-time setup — point the collection at your stash directory:
 
 ```bash
-qmd collection add ~/stash --name stash --mask "*.md"
+qmd collection add ~/projects/knowledge --name stash --mask "*.md"
 ```
 
+Replace the path with whatever `stash config` shows as your stash dir.
+
 New stashes are auto-indexed after saving.
+
+If you change your stash directory later, recreate the collection:
+
+```bash
+qmd collection remove stash
+qmd collection add ~/new/path --name stash --mask "*.md"
+```
 
 ## What gets saved
 

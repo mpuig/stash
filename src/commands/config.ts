@@ -2,13 +2,14 @@ import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { loadConfig, getConfigPath, getConfigDir } from "../config.js";
 
-export function showConfig(): void {
+export function showConfig(dirOverride?: string): void {
   const config = loadConfig();
   const configPath = getConfigPath();
   const hasFile = existsSync(configPath);
+  const activeDir = dirOverride || config.dir;
 
   console.log(`Config: ${configPath}${hasFile ? "" : " (not created yet)"}`);
-  console.log(`Stash dir: ${config.dir}`);
+  console.log(`Stash dir: ${activeDir}${dirOverride && dirOverride !== config.dir ? " (--dir override)" : ""}`);
   console.log(`Default tags: ${config.tags.length ? config.tags.join(", ") : "(none)"}`);
   console.log(`Summary mode: ${config.summary.mode}${config.summary.model ? ` (${config.summary.model})` : ""}`);
 }

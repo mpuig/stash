@@ -9,6 +9,8 @@ const config = loadConfig();
 
 const program = new Command();
 
+const DIR_NOTE = "Use --dir on the root command to override the stash directory.";
+
 program
   .name("stash")
   .description("Save interesting content from the web as searchable markdown")
@@ -42,6 +44,7 @@ program
   .description("List saved stashes")
   .option("-n, --limit <n>", "number of items to show", "20")
   .option("--tag <tag>", "filter by tag")
+  .addHelpText("after", `\n${DIR_NOTE}\n`)
   .action(async (opts) => {
     const dir = program.opts().dir;
     await listStashes({ ...opts, dir });
@@ -52,6 +55,7 @@ program
   .alias("s")
   .description("Search stashes and optionally open the best match")
   .option("-o, --open", "open the best match URL in the browser")
+  .addHelpText("after", `\n${DIR_NOTE}\n`)
   .action(async (query, opts) => {
     const dir = program.opts().dir;
     await searchStashes(query, { ...opts, dir });
@@ -64,8 +68,10 @@ const configCmd = program
 configCmd
   .command("show", { isDefault: true })
   .description("Show current configuration")
+  .addHelpText("after", `\n${DIR_NOTE}\n`)
   .action(() => {
-    showConfig();
+    const dir = program.opts().dir;
+    showConfig(dir);
   });
 
 configCmd
