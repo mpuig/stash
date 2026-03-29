@@ -1,11 +1,20 @@
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+import { platform } from "node:os";
 import matter from "gray-matter";
 import { assertDirExists } from "../util.js";
 
-interface SearchOptions {
+export interface SearchOptions {
   dir: string;
+  open?: boolean;
+}
+
+interface SearchResult {
+  file: string;
+  title: string;
+  url: string;
+  score: number;
 }
 
 function hasQmd(): boolean {
@@ -17,22 +26,28 @@ function hasQmd(): boolean {
   }
 }
 
-/**
- * Verify the "stash" qmd collection actually indexes the given directory
- * by checking that a sample of its indexed files exist there.
- */
 function qmdCollectionMatchesDir(dir: string): boolean {
   try {
     const output = execFileSync("qmd", ["ls", "stash"], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    // Lines look like: "10.4 KB  Mar 29 18:04  qmd://stash/filename.md"
     const match = output.match(/qmd:\/\/stash\/(\S+\.md)/);
     if (!match) return false;
     return existsSync(join(dir, match[1]));
   } catch {
     return false;
+  }
+}
+
+function openUrl(url: string): void {
+  const os = platform();
+  if (os === "darwin") {
+    execFileSync("open", [url]);
+  } else if (os === "win32") {
+    execFileSync("cmd", ["/c", "start", "", url]);
+  } else {
+    execFileSync("xdg-open", [url]);
   }
 }
 
@@ -53,10 +68,10 @@ function searchWithQmd(query: string): void {
   }
 }
 
-function searchWithGrep(query: string, dir: string): void {
+function searchWithGrep(query: string, dir: string): SearchResult[] {
   const files = readdirSync(dir).filter((f) => f.endsWith(".md"));
   const terms = query.toLowerCase().split(/\s+/);
-  const results: { file: string; title: string; url: string; score: number }[] = [];
+  const results: SearchResult[] = [];
 
   for (const file of files) {
     let data: Record<string, unknown>;
@@ -86,28 +101,42 @@ function searchWithGrep(query: string, dir: string): void {
     }
   }
 
-  results.sort((a, b) => b.score - a.score);
+  return results.sort((a, b) => b.score - a.score);
+}
 
-  if (results.length === 0) {
-    console.log(`No results for "${query}"`);
-    return;
-  }
-
-  for (const r of results.slice(0, 10)) {
-    console.log(`  ${r.title}`);
-    console.log(`  ${r.url}`);
-    console.log();
-  }
-
-  console.log(`${results.length} result${results.length === 1 ? "" : "s"}`);
+function grepBestUrl(query: string, dir: string): string | null {
+  const results = searchWithGrep(query, dir);
+  return results.length > 0 ? results[0].url : null;
 }
 
 export async function searchStashes(query: string, opts: SearchOptions): Promise<void> {
   assertDirExists(opts.dir);
 
+  if (opts.open) {
+    // For --open, always use grep to get the URL directly
+    const url = grepBestUrl(query, opts.dir);
+    if (!url) {
+      console.log(`No results for "${query}"`);
+      process.exit(1);
+    }
+    console.log(`Opening: ${url}`);
+    openUrl(url);
+    return;
+  }
+
   if (hasQmd() && qmdCollectionMatchesDir(opts.dir)) {
     searchWithQmd(query);
   } else {
-    searchWithGrep(query, opts.dir);
+    const results = searchWithGrep(query, opts.dir);
+    if (results.length === 0) {
+      console.log(`No results for "${query}"`);
+      return;
+    }
+    for (const r of results.slice(0, 10)) {
+      console.log(`  ${r.title}`);
+      console.log(`  ${r.url}`);
+      console.log();
+    }
+    console.log(`${results.length} result${results.length === 1 ? "" : "s"}`);
   }
 }

@@ -15,18 +15,31 @@ CLI tool that saves web content as searchable markdown files.
 
 ```
 src/
-  cli.ts          CLI entry point, Commander setup, LLM usage guide
+  cli.ts          CLI entry point, Commander setup
   config.ts       Config loading, defaults, ~ expansion
   extract.ts      Content extraction via defuddle subprocess
+  util.ts         Shared helpers (assertDirExists)
   commands/
     save.ts       stash <url> — fetch, save, auto-index qmd
-    list.ts       stash list — list saved stashes
-    search.ts     stash search — qmd BM25 or built-in grep
-    open.ts       stash open — open original URL
-    config.ts     stash config — show/init/set config
+    list.ts       stash ls — list saved stashes
+    search.ts     stash search — qmd BM25 or built-in grep, --open support
+    config.ts     stash config — show/set config
 scripts/
   build-cli.mjs   Generates dist/cli.js shebang wrapper
 ```
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `stash <url> [-t tags]` | Fetch, extract, save as markdown, auto-index |
+| `stash ls [--tag tag] [-n limit]` | List saved stashes |
+| `stash search <query> [--open]` | Search stashes; `--open` opens best match in browser |
+| `stash config` | Show config |
+| `stash config set <key> <value>` | Set a config value (supports dotted keys) |
+| `stash format` | Show file format details for agents/scripts |
+
+`--dir` is a global option that works on every command.
 
 ## Build
 
@@ -36,31 +49,24 @@ npm run build     # tsc + generate CLI wrapper
 npm run dev       # run via tsx without building
 ```
 
-The build produces `dist/cli.js` (thin ESM wrapper) and `dist/esm/` (compiled TypeScript). Not bundled — uses tsc output directly to avoid CJS/ESM interop issues.
-
 ## Key decisions
 
-- **No bundling**: CLI wrapper does `await import('./esm/cli.js')` — avoids esbuild CJS shim problems.
-- **Defuddle as subprocess**: defuddle's `parse()` needs a DOM `Document` object. The CLI handles fetching + DOM setup internally, so we call `execFileSync("npx", ["defuddle", "parse", url, "--json"])` rather than importing the library.
-- **No shell interpolation**: All subprocess calls use `execFileSync()` with argv arrays to prevent shell injection. Never use `execSync()` with string interpolation.
-- **YAML safety**: All string values in frontmatter are always double-quoted. This prevents crashes on values like `@handles`, URLs with special characters, etc.
-- **Obsidian-compatible frontmatter**: Tags as indented YAML lists, dates as YYYY-MM-DD, all strings quoted.
-- **No LLM by default**: Summary field uses page description or first paragraph. AI summaries are planned as opt-in (`summary.mode: "ai"` in config).
-- **Config follows summarize pattern**: `~/.stash/config.json`, env vars override config, CLI flags override everything.
-- **Search with qmd**: Uses qmd BM25 search scoped to the collection matching the stash directory. Falls back to built-in term matching if qmd is not installed. Auto-indexes after each save.
-- **Per-file error handling**: list, search, and open skip malformed files gracefully instead of crashing.
+- **No bundling**: CLI wrapper does `await import('./esm/cli.js')`.
+- **Defuddle as subprocess**: `execFileSync("npx", ["defuddle", "parse", url, "--json"])`.
+- **No shell interpolation**: All subprocess calls use `execFileSync()` with argv arrays.
+- **YAML safety**: All string values in frontmatter are always double-quoted.
+- **Obsidian-compatible frontmatter**: Tags as indented YAML lists, dates as YYYY-MM-DD.
+- **Global `--dir`**: Defined once on the root program, read via `program.opts().dir` in all subcommands.
+- **Search + open merged**: `stash search "foo" --open` replaces the old separate `open` command.
+- **qmd verification**: Checks that the qmd collection's indexed files exist in the target directory before using it.
+- **Per-file error handling**: list and search skip malformed files gracefully.
 
-## Commands
+## Security
 
-| Command | Purpose |
-|---------|---------|
-| `stash <url> [-t tags]` | Fetch, extract, save as markdown, auto-index |
-| `stash list [-n limit] [-t tag]` | List saved stashes |
-| `stash search <query>` | Full-text search (qmd BM25 or built-in) |
-| `stash open <query>` | Open best match URL in browser |
-| `stash config` | Show config |
-| `stash config init` | Create default config file |
-| `stash config set <key> <value>` | Set a config value (supports dotted keys) |
+- All subprocess calls use `execFileSync()` with argv arrays — no shell interpolation
+- All YAML string values are double-quoted to prevent injection via crafted titles/authors
+- Malformed stash files are skipped with a warning, never crash the CLI
+- Directory existence checked before filesystem operations
 
 ## Testing changes
 
@@ -68,9 +74,3 @@ The build produces `dist/cli.js` (thin ESM wrapper) and `dist/esm/` (compiled Ty
 npm run dev -- <url>                    # run without building
 npm run build && stash <url>            # build + run via global link
 ```
-
-## Security
-
-- All subprocess calls use `execFileSync()` with argv arrays — no shell interpolation
-- All YAML string values are double-quoted to prevent injection via crafted titles/authors
-- Malformed stash files are skipped with a warning, never crash the CLI

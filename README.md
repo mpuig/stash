@@ -14,133 +14,79 @@ Save web pages as plain markdown files you can search, read, and keep forever.
 
 ## Install
 
-Install globally:
-
 ```bash
 npm install -g @mpuig/stash
 ```
 
-Or run it without installing:
+Or run without installing:
 
 ```bash
 npx @mpuig/stash <url>
 ```
 
-## Quick Start
-
-### 1. Check your current config
+## Quick start
 
 ```bash
-stash config
+stash https://example.com/article          # save a page
+stash https://example.com/article -t "ai"  # save with tags
+stash ls                                    # list saved pages
+stash search "agents"                       # search content
+stash search "agents" --open                # search and open best match
+stash config                                # show config
 ```
 
-By default, stashes are saved to `~/stash`.
-
-### 2. Optional: create a config file
-
-If you want an explicit config file to edit later:
-
-```bash
-stash config init
-```
-
-This creates `~/.stash/config.json`.
-
-### 3. Optional: change the save directory
-
-```bash
-stash config set dir ~/Documents/stash
-```
-
-After changing the directory, new stashes will be saved there by default.
-
-### 4. Save your first page
-
-```bash
-stash https://example.com/interesting-article
-```
-
-Add tags if you want:
-
-```bash
-stash https://example.com/article -t "ai,tools"
-```
-
-### 5. Browse what you saved
-
-```bash
-stash list
-stash search "tool calling"
-stash open "interesting article"
-```
-
-## Everyday Usage
+## Commands
 
 ### Save a page
 
 ```bash
-stash https://example.com/article
-stash https://example.com/article -t "reading,cli"
+stash <url>
+stash <url> -t "ai,tools"
 ```
 
 ### List saved pages
 
 ```bash
-stash list
 stash ls
-stash list --tag ai
-stash list -n 5
+stash ls --tag ai
+stash ls -n 5
 ```
 
-### Search saved pages
+### Search
 
 ```bash
 stash search "programmatic tool calling"
 stash s "agents"
+stash search "agents" --open    # open best match in browser
 ```
 
-### Open the original URL in your browser
+### Configuration
 
 ```bash
-stash open "mythical agent"
+stash config                               # show current config
+stash config set dir ~/Documents/stash     # change save directory
+stash config set tags "reading,web"        # set default tags
 ```
 
-### Show or change config
+### Override directory for one command
+
+`--dir` works on every command:
 
 ```bash
-stash config
-stash config init
-stash config set dir ~/Documents/stash
-stash config set tags "reading,web"
+stash --dir ~/work https://example.com/article
+stash --dir ~/work ls
+stash --dir ~/work search "agents"
 ```
 
-## Using Another Directory
-
-There are two ways to work with a non-default stash directory:
-
-Use it as your default:
+Or set `STASH_DIR` for the same effect:
 
 ```bash
-stash config set dir ~/Documents/stash
+STASH_DIR=~/work stash ls
 ```
 
-Or use it for one command by setting `STASH_DIR`:
+## Better search with qmd
 
-```bash
-STASH_DIR=~/Documents/stash stash https://example.com/article
-```
-
-For `list`, `search`, and `open`, you can also pass `--dir` directly:
-
-```bash
-stash list --dir ~/Documents/stash
-stash search "agents" --dir ~/Documents/stash
-stash open "mythical agent" --dir ~/Documents/stash
-```
-
-## Optional: Better Search With qmd
-
-`stash search` works out of the box with built-in term matching. If you install [qmd](https://github.com/tobi/qmd), `stash` can use BM25-ranked search for your configured default stash directory.
+`stash search` works out of the box with built-in term matching. If you install [qmd](https://github.com/tobi/qmd), search uses BM25 ranking automatically.
 
 One-time setup:
 
@@ -148,17 +94,9 @@ One-time setup:
 qmd collection add ~/stash --name stash --mask "*.md"
 ```
 
-If your stash directory is not `~/stash`, use that directory instead:
+New stashes are auto-indexed after saving.
 
-```bash
-qmd collection add ~/Documents/stash --name stash --mask "*.md"
-```
-
-After that, new stashes are indexed automatically when you save them.
-
-If you use `search --dir ...` to search another folder, `stash` falls back to its built-in search for that command.
-
-## What Gets Saved
+## What gets saved
 
 Each stash is a markdown file with Obsidian-compatible YAML frontmatter:
 
@@ -166,7 +104,7 @@ Each stash is a markdown file with Obsidian-compatible YAML frontmatter:
 ---
 url: "https://example.com/article"
 title: "The Article Title"
-summary: "A concise description of the content for humans and agents"
+summary: "A concise description for humans and agents"
 author: "Jane Doe"
 domain: "example.com"
 published: "2026-03-01"
@@ -180,13 +118,11 @@ wordCount: 1500
 Full article content in markdown...
 ```
 
-Files are named like `YYYY-MM-DD-slugified-title.md`.
+Files are named `YYYY-MM-DD-slugified-title.md`.
 
 ## Configuration
 
-Config lives at `~/.stash/config.json`.
-
-Example:
+Config lives at `~/.stash/config.json`. Created automatically when you run `stash config set`.
 
 ```json
 {
@@ -204,50 +140,13 @@ Example:
 | `dir` | Directory where markdown files are saved | `~/stash` |
 | `tags` | Default tags added to every new stash | `[]` |
 | `summary.mode` | Reserved for future summary modes | `"extract"` |
-| `summary.model` | Reserved for future AI summaries | — |
-| `env` | Extra environment variables to load into the process | `{}` |
+| `env` | Extra environment variables to load | `{}` |
 
-Current precedence:
+Precedence: `--dir` flag > `STASH_DIR` env > config file > defaults.
 
-1. `STASH_DIR` environment variable
-2. Config file
-3. Built-in defaults
+## Agent integration
 
-For `list`, `search`, and `open`, `--dir` overrides the configured directory for that command.
-
-## Troubleshooting
-
-### `No stashes yet`
-
-You have not saved anything in the current stash directory yet. Run:
-
-```bash
-stash https://example.com/article
-```
-
-Or check which directory is active:
-
-```bash
-stash config
-```
-
-### Search is not using qmd
-
-Make sure:
-
-- `qmd` is installed
-- you created a collection named `stash`
-- the collection points to your configured stash directory
-
-### I want the built-in help for agents or scripts
-
-Run:
-
-```bash
-stash --help
-```
-
-It includes examples, file format details, and usage notes for programmatic use.
+Run `stash --help` for a concise overview, or `stash format` for file format details and programmatic usage notes. No plugin or skill installation needed.
 
 ## Why plain markdown?
 
