@@ -22,7 +22,6 @@ Examples:
   stash search "agents" --open
   stash config set dir ~/Documents/stash
 
-Run stash help format for file format details and agent integration notes.
 `);
 
 program
@@ -71,45 +70,6 @@ configCmd
   .description("Set a config value (e.g., dir ~/Documents/stash)")
   .action((key, value) => {
     setConfig(key, value);
-  });
-
-program
-  .command("format")
-  .description("Show file format details for agents and scripts")
-  .action(() => {
-    console.log(`
-stash saves web pages as markdown files with Obsidian-compatible YAML frontmatter.
-
-File format:
-  ---
-  url: "https://example.com/article"
-  title: "The Article Title"
-  summary: "A concise description for humans and agents"
-  author: "Jane Doe"
-  domain: "example.com"
-  published: "2026-03-01"
-  saved: "2026-03-29"
-  tags:
-    - "ai"
-    - "tools"
-  wordCount: 1500
-  ---
-
-  Full article content in markdown...
-
-All string values are always double-quoted for YAML safety.
-Tags use indented list format. Published dates are YYYY-MM-DD.
-Filenames follow the pattern: YYYY-MM-DD-slugified-title.md
-
-Storage:
-  Default directory: ~/stash (configurable via stash config set dir)
-  Config file: ~/.stash/config.json
-
-Search:
-  Uses qmd BM25 ranking when available, built-in term matching otherwise.
-  Set up qmd (one-time): qmd collection add ~/stash --name stash --mask "*.md"
-  New stashes are auto-indexed in qmd after saving.
-`.trim());
   });
 
 program.parse();

@@ -146,7 +146,7 @@ Precedence: `--dir` flag > `STASH_DIR` env > config file > defaults.
 
 ## Agent integration
 
-Run `stash --help` for a concise overview, or `stash format` for file format details and programmatic usage notes. No plugin or skill installation needed.
+Run `stash --help` for a concise overview with examples. No plugin or skill installation needed.
 
 ## Why plain markdown?
 

@@ -37,7 +37,6 @@ scripts/
 | `stash search <query> [--open]` | Search stashes; `--open` opens best match in browser |
 | `stash config` | Show config |
 | `stash config set <key> <value>` | Set a config value (supports dotted keys) |
-| `stash format` | Show file format details for agents/scripts |
 
 `--dir` is a global option that works on every command.
 
