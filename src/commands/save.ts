@@ -1,6 +1,6 @@
 import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import ora from "ora";
 import { extractFromUrl } from "../extract.js";
 import type { StashConfig } from "../config.js";
@@ -23,21 +23,24 @@ function makeFilename(title: string, date: string): string {
   return `${date}-${slugify(title)}.md`;
 }
 
+function yamlQuote(value: string): string {
+  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
+
 function formatFrontmatter(meta: Record<string, unknown>): string {
   const lines = ["---"];
   for (const [key, value] of Object.entries(meta)) {
     if (value === null || value === undefined) continue;
     if (Array.isArray(value)) {
-      // Obsidian-compatible: unquoted tag values in YAML list
       lines.push(`${key}:`);
       for (const item of value) {
-        lines.push(`  - ${item}`);
+        lines.push(`  - ${yamlQuote(String(item))}`);
       }
-    } else if (typeof value === "string" && (value.includes(":") || value.includes('"') || value.includes("#"))) {
-      const escaped = (value as string).replace(/"/g, '\\"');
-      lines.push(`${key}: "${escaped}"`);
-    } else {
+    } else if (typeof value === "number") {
       lines.push(`${key}: ${value}`);
+    } else {
+      lines.push(`${key}: ${yamlQuote(String(value))}`);
     }
   }
   lines.push("---");
@@ -46,7 +49,7 @@ function formatFrontmatter(meta: Record<string, unknown>): string {
 
 function updateQmdIndex(): void {
   try {
-    execSync("qmd update", { stdio: "ignore", timeout: 10_000 });
+    execFileSync("qmd", ["update"], { stdio: "ignore", timeout: 10_000 });
   } catch {
     // qmd not installed or no collection — skip silently
   }

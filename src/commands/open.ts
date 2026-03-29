@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import matter from "gray-matter";
 
 interface OpenOptions {
@@ -14,9 +14,15 @@ export async function openStash(query: string, opts: OpenOptions): Promise<void>
   let best: { url: string; title: string; score: number } | null = null;
 
   for (const file of files) {
-    const raw = readFileSync(join(opts.dir, file), "utf-8");
-    const { data, content } = matter(raw);
-    const searchable = `${data.title || ""} ${data.description || ""} ${content}`.toLowerCase();
+    let data: Record<string, unknown>;
+    let content: string;
+    try {
+      const raw = readFileSync(join(opts.dir, file), "utf-8");
+      ({ data, content } = matter(raw));
+    } catch {
+      continue;
+    }
+    const searchable = `${data.title || ""} ${data.summary || ""} ${content}`.toLowerCase();
 
     let score = 0;
     for (const term of terms) {
@@ -25,7 +31,7 @@ export async function openStash(query: string, opts: OpenOptions): Promise<void>
     }
 
     if (score > 0 && (!best || score > best.score)) {
-      best = { url: data.url, title: data.title || file, score };
+      best = { url: data.url as string, title: (data.title as string) || file, score };
     }
   }
 
@@ -36,5 +42,5 @@ export async function openStash(query: string, opts: OpenOptions): Promise<void>
 
   console.log(`Opening: ${best.title}`);
   console.log(`  ${best.url}`);
-  execSync(`open "${best.url}"`);
+  execFileSync("open", [best.url]);
 }

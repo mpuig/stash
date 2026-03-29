@@ -13,7 +13,68 @@ const program = new Command();
 program
   .name("stash")
   .description("Save interesting content from the web as searchable markdown")
-  .version("0.1.0");
+  .version("0.1.0")
+  .addHelpText("after", `
+LLM USAGE GUIDE:
+
+  stash is a CLI tool that saves web pages as searchable markdown files.
+  Each saved file contains YAML frontmatter (url, title, summary, author,
+  domain, published, saved, tags, wordCount) followed by the full article
+  content in markdown.
+
+  Files are stored in a configurable directory (default: ~/stash).
+  Config is at ~/.stash/config.json.
+
+  Save a URL:
+    stash "https://example.com/article"
+    stash "https://example.com/article" -t "ai,tools"
+
+  Search saved content:
+    stash search "tool calling"
+    stash s "agents"
+
+  List saved stashes:
+    stash list
+    stash ls
+    stash list -t ai              # filter by tag
+    stash list -n 5               # limit results
+
+  Open original URL in browser:
+    stash open "mythical agent"
+
+  Configuration:
+    stash config                          # show current config
+    stash config init                     # create default config file
+    stash config set dir ~/docs/stash     # change stash directory
+    stash config set tags "reading,web"   # set default tags
+
+  File format:
+    ---
+    url: "https://example.com/article"
+    title: The Article Title
+    summary: A concise description for humans and agents
+    author: Jane Doe
+    domain: example.com
+    published: "2026-03-01T00:00:00.000Z"
+    saved: 2026-03-29
+    tags: ["ai", "tools"]
+    wordCount: 1500
+    ---
+
+    Full article content in markdown...
+
+  Reading stash files programmatically:
+    Files are plain markdown with YAML frontmatter. Parse frontmatter to
+    get metadata, read the body for full content. Filenames follow the
+    pattern: YYYY-MM-DD-slugified-title.md
+
+  Tips:
+    - Use tags to categorize content for later retrieval.
+    - The summary field is always present — use it for quick scanning.
+    - Combine with grep/ripgrep/qmd for powerful full-text search.
+    - All data is local plain files — no API keys or accounts needed.
+    - Stash directory can be version-controlled with git.
+`);
 
 program
   .argument("[url]", "URL to stash")

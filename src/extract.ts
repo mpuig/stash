@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 export interface ExtractedContent {
   title: string;
@@ -23,7 +23,7 @@ function makeSummary(description: string | null, content: string): string {
 }
 
 export async function extractFromUrl(url: string): Promise<ExtractedContent> {
-  const output = execSync(`npx defuddle parse "${url}" --json`, {
+  const output = execFileSync("npx", ["defuddle", "parse", url, "--json"], {
     encoding: "utf-8",
     timeout: 30_000,
     maxBuffer: 10 * 1024 * 1024,

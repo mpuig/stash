@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import matter from "gray-matter";
 
 interface SearchOptions {
@@ -9,25 +9,37 @@ interface SearchOptions {
 
 function hasQmd(): boolean {
   try {
-    execSync("which qmd", { stdio: "ignore" });
+    execFileSync("which", ["qmd"], { stdio: "ignore" });
     return true;
   } catch {
     return false;
   }
 }
 
-function qmdCollectionExists(): boolean {
+function qmdCollectionForDir(dir: string): string | null {
   try {
-    const output = execSync("qmd collection list", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
-    return output.includes("stash");
+    const output = execFileSync("qmd", ["collection", "list"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    // match collection whose path matches the configured dir
+    for (const line of output.split("\n")) {
+      const match = line.match(/^\s*(\S+)\s+(.+?)(\s|$)/);
+      if (match && match[2] && dir.startsWith(match[2].trim())) {
+        return match[1];
+      }
+    }
+    // fallback: check if "stash" collection exists
+    if (output.includes("stash")) return "stash";
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-function searchWithQmd(query: string): void {
+function searchWithQmd(query: string, collection: string): void {
   try {
-    const output = execSync(`qmd search "${query.replace(/"/g, '\\"')}" -n 10 -c stash`, {
+    const output = execFileSync("qmd", ["search", query, "-n", "10", "-c", collection], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -48,9 +60,16 @@ function searchWithGrep(query: string, dir: string): void {
   const results: { file: string; title: string; url: string; score: number }[] = [];
 
   for (const file of files) {
-    const raw = readFileSync(join(dir, file), "utf-8");
-    const { data, content } = matter(raw);
-    const searchable = `${data.title || ""} ${data.description || ""} ${data.tags?.join(" ") || ""} ${content}`.toLowerCase();
+    let data: Record<string, unknown>;
+    let content: string;
+    try {
+      const raw = readFileSync(join(dir, file), "utf-8");
+      ({ data, content } = matter(raw));
+    } catch {
+      continue;
+    }
+    const tags = Array.isArray(data.tags) ? data.tags.join(" ") : "";
+    const searchable = `${data.title || ""} ${data.summary || ""} ${tags} ${content}`.toLowerCase();
 
     let score = 0;
     for (const term of terms) {
@@ -61,8 +80,8 @@ function searchWithGrep(query: string, dir: string): void {
     if (score > 0) {
       results.push({
         file,
-        title: data.title || file,
-        url: data.url || "",
+        title: (data.title as string) || file,
+        url: (data.url as string) || "",
         score,
       });
     }
@@ -85,8 +104,9 @@ function searchWithGrep(query: string, dir: string): void {
 }
 
 export async function searchStashes(query: string, opts: SearchOptions): Promise<void> {
-  if (hasQmd() && qmdCollectionExists()) {
-    searchWithQmd(query);
+  const collection = hasQmd() ? qmdCollectionForDir(opts.dir) : null;
+  if (collection) {
+    searchWithQmd(query, collection);
   } else {
     searchWithGrep(query, opts.dir);
   }
