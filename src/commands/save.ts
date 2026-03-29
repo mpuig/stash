@@ -27,8 +27,12 @@ function formatFrontmatter(meta: Record<string, unknown>): string {
   for (const [key, value] of Object.entries(meta)) {
     if (value === null || value === undefined) continue;
     if (Array.isArray(value)) {
-      lines.push(`${key}: [${value.map((v) => `"${v}"`).join(", ")}]`);
-    } else if (typeof value === "string" && (value.includes(":") || value.includes('"'))) {
+      // Obsidian-compatible: unquoted tag values in YAML list
+      lines.push(`${key}:`);
+      for (const item of value) {
+        lines.push(`  - ${item}`);
+      }
+    } else if (typeof value === "string" && (value.includes(":") || value.includes('"') || value.includes("#"))) {
       const escaped = (value as string).replace(/"/g, '\\"');
       lines.push(`${key}: "${escaped}"`);
     } else {
@@ -56,7 +60,7 @@ export async function stashUrl(url: string, opts: SaveOptions): Promise<void> {
       summary: extracted.summary,
       author: extracted.author,
       domain: extracted.domain,
-      published: extracted.published,
+      published: extracted.published?.slice(0, 10) || null,
       saved: date,
       tags: tags.length > 0 ? tags : undefined,
       wordCount: extracted.wordCount,
