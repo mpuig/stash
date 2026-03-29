@@ -54,6 +54,7 @@ The build produces `dist/cli.js` (thin ESM wrapper) and `dist/esm/` (compiled Ty
 | `stash open <query>` | Open best match URL in browser |
 | `stash config` | Show config |
 | `stash config init` | Create default config file |
+| `stash config set <key> <value>` | Set a config value (supports dotted keys) |
 
 ## Testing changes
 

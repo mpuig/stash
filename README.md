@@ -43,6 +43,12 @@ stash config
 
 # Create a config file
 stash config init
+
+# Change where stashes are saved
+stash config set dir ~/Documents/stash
+
+# Set default tags for all stashes
+stash config set tags "reading,web"
 ```
 
 ## How it works
@@ -71,7 +77,7 @@ Full article content in markdown...
 
 ## Configuration
 
-Config lives at `~/.stash/config.json`. Create it with `stash config init`.
+Config lives at `~/.stash/config.json`. Create it with `stash config init`, or set values directly with `stash config set`.
 
 ```json
 {

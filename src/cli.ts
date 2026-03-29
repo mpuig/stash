@@ -3,7 +3,7 @@ import { stashUrl } from "./commands/save.js";
 import { listStashes } from "./commands/list.js";
 import { searchStashes } from "./commands/search.js";
 import { openStash } from "./commands/open.js";
-import { showConfig, initConfig } from "./commands/config.js";
+import { showConfig, initConfig, setConfig } from "./commands/config.js";
 import { loadConfig } from "./config.js";
 
 const config = loadConfig();
@@ -71,6 +71,13 @@ configCmd
   .description("Create a default config file")
   .action(() => {
     initConfig();
+  });
+
+configCmd
+  .command("set <key> <value>")
+  .description("Set a config value (e.g., dir ~/Documents/stash)")
+  .action((key, value) => {
+    setConfig(key, value);
   });
 
 program.parse();

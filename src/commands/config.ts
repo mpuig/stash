@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { loadConfig, getConfigPath, getConfigDir } from "../config.js";
 
 export function showConfig(): void {
@@ -34,4 +34,35 @@ export function initConfig(): void {
   console.log(`Created: ${configPath}`);
   console.log();
   showConfig();
+}
+
+export function setConfig(key: string, value: string): void {
+  const configPath = getConfigPath();
+
+  let config: Record<string, unknown> = {};
+  if (existsSync(configPath)) {
+    config = JSON.parse(readFileSync(configPath, "utf-8"));
+  }
+
+  // support dotted keys like summary.mode
+  const keys = key.split(".");
+  let target: Record<string, unknown> = config;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (typeof target[keys[i]] !== "object" || target[keys[i]] === null) {
+      target[keys[i]] = {};
+    }
+    target = target[keys[i]] as Record<string, unknown>;
+  }
+
+  const finalKey = keys[keys.length - 1];
+
+  // parse arrays for tags
+  if (key === "tags") {
+    target[finalKey] = value.split(",").map((t) => t.trim());
+  } else {
+    target[finalKey] = value;
+  }
+
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  console.log(`Set ${key} = ${value}`);
 }
