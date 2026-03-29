@@ -1,5 +1,6 @@
 import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { execSync } from "node:child_process";
 import ora from "ora";
 import { extractFromUrl } from "../extract.js";
 import type { StashConfig } from "../config.js";
@@ -43,6 +44,14 @@ function formatFrontmatter(meta: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
+function updateQmdIndex(): void {
+  try {
+    execSync("qmd update", { stdio: "ignore", timeout: 10_000 });
+  } catch {
+    // qmd not installed or no collection — skip silently
+  }
+}
+
 export async function stashUrl(url: string, opts: SaveOptions): Promise<void> {
   const spinner = ora(`Fetching ${url}`).start();
 
@@ -76,6 +85,7 @@ export async function stashUrl(url: string, opts: SaveOptions): Promise<void> {
     }
 
     writeFileSync(filepath, markdown, "utf-8");
+    updateQmdIndex();
     spinner.succeed(`Stashed: ${filename}`);
   } catch (err) {
     spinner.fail(`Failed: ${(err as Error).message}`);
