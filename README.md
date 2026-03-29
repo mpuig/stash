@@ -55,24 +55,50 @@ stash config set tags "reading,web"
 
 1. Fetches the URL
 2. Extracts the main content using [defuddle](https://github.com/kepano/defuddle) (no AI, pure HTML parsing)
-3. Saves a markdown file to `~/stash/` with YAML frontmatter
+3. Saves a markdown file to `~/stash/` with Obsidian-compatible YAML frontmatter
+4. Auto-indexes in [qmd](https://github.com/tobi/qmd) if available
 
 Each file looks like:
 
 ```markdown
 ---
 url: "https://example.com/article"
-title: The Article Title
-summary: A concise description of the content for humans and agents
-author: Jane Doe
-domain: example.com
-published: "2026-03-01T00:00:00.000Z"
-saved: 2026-03-29
-tags: ["ai", "tools"]
+title: "The Article Title"
+summary: "A concise description of the content for humans and agents"
+author: "Jane Doe"
+domain: "example.com"
+published: "2026-03-01"
+saved: "2026-03-29"
+tags:
+  - "ai"
+  - "tools"
 wordCount: 1500
 ---
 
 Full article content in markdown...
+```
+
+All string values are double-quoted for YAML safety. Tags use Obsidian-compatible indented list format. Published dates are trimmed to `YYYY-MM-DD`.
+
+## Search
+
+`stash search` uses [qmd](https://github.com/tobi/qmd) for BM25-ranked full-text search when available, and falls back to built-in term matching otherwise.
+
+### Set up qmd (one-time)
+
+```bash
+qmd collection add ~/stash --name stash --mask "*.md"
+```
+
+New stashes are auto-indexed after saving — no manual `qmd update` needed.
+
+### Without qmd
+
+Search still works using built-in term matching across frontmatter (title, summary, tags) and content. You can also use any external tool:
+
+```bash
+grep -r "tool calling" ~/stash/
+rg "agents" ~/stash/
 ```
 
 ## Configuration
@@ -100,13 +126,9 @@ Config lives at `~/.stash/config.json`. Create it with `stash config init`, or s
 
 Resolution order: CLI flags > environment variables > config file > defaults.
 
-## Search
+## AI agent integration
 
-`stash search` does simple full-text search across all frontmatter and content. For more powerful search, point [qmd](https://github.com/tobi/qmd) at your stash directory:
-
-```bash
-qmd ~/stash "tool calling agents"
-```
+Run `stash --help` to get a complete LLM usage guide with file format, examples, and tips. No plugin or skill installation needed — the help output contains everything an agent needs.
 
 ## Why plain markdown?
 

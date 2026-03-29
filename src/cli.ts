@@ -48,25 +48,37 @@ LLM USAGE GUIDE:
     stash config set dir ~/docs/stash     # change stash directory
     stash config set tags "reading,web"   # set default tags
 
-  File format:
+  File format (Obsidian-compatible YAML frontmatter):
     ---
     url: "https://example.com/article"
-    title: The Article Title
-    summary: A concise description for humans and agents
-    author: Jane Doe
-    domain: example.com
-    published: "2026-03-01T00:00:00.000Z"
-    saved: 2026-03-29
-    tags: ["ai", "tools"]
+    title: "The Article Title"
+    summary: "A concise description for humans and agents"
+    author: "Jane Doe"
+    domain: "example.com"
+    published: "2026-03-01"
+    saved: "2026-03-29"
+    tags:
+      - "ai"
+      - "tools"
     wordCount: 1500
     ---
 
     Full article content in markdown...
 
+  All string values are always double-quoted for YAML safety.
+  Tags use Obsidian-compatible indented list format.
+  Published dates are YYYY-MM-DD.
+
   Reading stash files programmatically:
     Files are plain markdown with YAML frontmatter. Parse frontmatter to
     get metadata, read the body for full content. Filenames follow the
     pattern: YYYY-MM-DD-slugified-title.md
+
+  Search:
+    When qmd is installed with a "stash" collection, search uses BM25
+    ranking via qmd. Otherwise it falls back to built-in term matching.
+    Set up qmd (one-time): qmd collection add ~/stash --name stash --mask "*.md"
+    New stashes are auto-indexed in qmd after saving.
 
   Tips:
     - Use tags to categorize content for later retrieval.
@@ -74,6 +86,7 @@ LLM USAGE GUIDE:
     - Combine with grep/ripgrep/qmd for powerful full-text search.
     - All data is local plain files — no API keys or accounts needed.
     - Stash directory can be version-controlled with git.
+    - Malformed stash files are skipped gracefully in list/search/open.
 `);
 
 program
